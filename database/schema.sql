@@ -55,3 +55,15 @@ CREATE TABLE IF NOT EXISTS telemetry_snapshots (
     recorded_at TEXT DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_telemetry_recorded_at ON telemetry_snapshots(recorded_at);
+
+-- My Garden scan history. One row per analyzed photo (captures row).
+-- garden_id stays NULL until the scan is saved to a garden plant; once set,
+-- the assessment is kept as history and never replaced. Deleting a garden
+-- plant keeps its photos and assessments but unlinks them.
+CREATE TABLE IF NOT EXISTS photo_assessments (
+    capture_id INTEGER PRIMARY KEY REFERENCES captures(id) ON DELETE CASCADE,
+    garden_id INTEGER REFERENCES garden(id) ON DELETE SET NULL,
+    assessment_json TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_photo_assessments_garden ON photo_assessments(garden_id, created_at);

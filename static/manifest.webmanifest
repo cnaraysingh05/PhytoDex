@@ -1,0 +1,9 @@
+{
+  "name": "PhytoDex",
+  "short_name": "PhytoDex",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3eef9",
+  "theme_color": "#24163a",
+  "icons": [{"src": "/static/img/phytodex-icon.svg", "sizes": "any", "type": "image/svg+xml"}]
+}

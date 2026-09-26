@@ -27,7 +27,9 @@ def create_app(test_config=None):
     if app.config.get('USE_PHOTO_BRIDGE') or importlib.util.find_spec(photo_module) is None:
         photo_module = 'backend.routes.photo_bridge'
     for module_name, bp_name in [('backend.routes.system', 'system_bp'),
-                                 (photo_module, 'analysis_bp')]:
+                                 (photo_module, 'analysis_bp'),
+                                 ('backend.routes.garden_scans', 'garden_scans_bp'),
+                                 ('backend.routes.frontend', 'frontend_bp')]:
         if importlib.util.find_spec(module_name) is not None:
             app.register_blueprint(getattr(importlib.import_module(module_name), bp_name))
 
