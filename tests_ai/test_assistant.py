@@ -11,7 +11,7 @@ class AssistantTests(unittest.TestCase):
         self.env = patch.dict(os.environ, {'AI_MODE': 'offline'}, clear=False)
         self.env.start()
         self.addCleanup(self.env.stop)
-        self.client = create_app().test_client()
+        self.client = create_app({'ASSISTANT_LOGGING': False, 'USE_PHOTO_BRIDGE': True}).test_client()
 
     def test_offline_is_explicit_and_does_not_invent_a_diagnosis(self):
         response = self.client.post('/api/assistant', json={'species': 'Pothos', 'message': 'soil is not wet'})
@@ -54,9 +54,9 @@ class AssistantTests(unittest.TestCase):
             with self.subTest(key=key), self.assertRaises(ValidationError):
                 Guidance(**dict(fields, **{key: value}))
 
-    def test_optional_vision_is_unavailable_without_weights(self):
+    def test_photo_is_unavailable_without_diagnosis_module(self):
         from io import BytesIO
-        with patch.dict(os.environ, {'VISION_MODEL_DIR': '/nonexistent/phytodex-model'}):
+        with patch('backend.routes.photo_bridge.diagnosis_builder', return_value=None):
             response = self.client.post('/api/identify', data={'image': (BytesIO(b'x'), 'x.jpg')})
         self.assertEqual(response.status_code, 503)
 

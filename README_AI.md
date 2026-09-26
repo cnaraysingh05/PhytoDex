@@ -1,3 +1,5 @@
+> Superseded for the current Gemini integration: start with docs/BRANCH_FIXES.md. The local-model training material below is optional and is not connected to the active application.
+
 # PhytoDex model sourcing and training
 
 Start with `docs/STEP_BY_STEP.md`. This is an add-on for your AI work, not a replacement backend.

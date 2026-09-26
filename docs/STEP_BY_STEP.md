@@ -1,3 +1,5 @@
+> Superseded for the current Gemini integration: start with docs/BRANCH_FIXES.md. The local-model training material below is optional and is not connected to the active application.
+
 # Your PhytoDex AI work step by step
 
 Your first deliverable is a reliable typed plant-care assistant on the Pi. Source an existing Gemini model for that. Your optional second deliverable is a small image classifier trained in Colab and run locally on the Pi. The two models solve different problems and must not be presented as interchangeable.
