@@ -1,0 +1,39 @@
+-- PhytoDex database schema
+-- Owner: Person 2 (Backend / Database / API) -- feature/backend
+
+CREATE TABLE IF NOT EXISTS plants (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    common_name TEXT NOT NULL,
+    scientific_name TEXT,
+    category TEXT,
+    water TEXT,
+    light TEXT,
+    soil TEXT,
+    temperature TEXT,
+    difficulty TEXT,
+    summary TEXT,
+    image_url TEXT
+);
+
+CREATE TABLE IF NOT EXISTS garden (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    plant_id INTEGER NOT NULL,
+    nickname TEXT,
+    date_added TEXT DEFAULT (datetime('now')),
+    notes TEXT,
+    last_watered TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (plant_id) REFERENCES plants(id)
+);
+
+-- NOT in the original team contract (Section 7/8). Added to support the
+-- stretch camera-capture upload flow. Flag to Person 3 (frontend) and
+-- Person 4 (AI) before merging -- Person 4's identification step will read
+-- rows from this table via capture_id/image_url.
+CREATE TABLE IF NOT EXISTS captures (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    filename TEXT NOT NULL,
+    image_url TEXT NOT NULL,
+    status TEXT DEFAULT 'pending',   -- pending -> stored -> identified (Person 4 owns the last transition)
+    created_at TEXT DEFAULT (datetime('now'))
+);
