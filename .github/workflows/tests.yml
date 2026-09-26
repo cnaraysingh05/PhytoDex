@@ -21,7 +21,7 @@ jobs:
       AI_MODE: offline
       GEMINI_API_KEY: ''
       GOOGLE_API_KEY: ''
-      PHYTODEX_DB_PATH: ${{ runner.temp }}/phytodex-ci.db
+      PHYTODEX_DB_PATH: ${{ github.workspace }}/phytodex-ci.db
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
