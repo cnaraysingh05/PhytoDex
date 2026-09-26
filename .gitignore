@@ -216,3 +216,15 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# PhytoDex AI generated files
+.env
+.env.*
+!.env.ai.example
+.venv*/
+__pycache__/
+*.pyc
+ml/data/
+models/
+ml-runs/
+training-results.zip
