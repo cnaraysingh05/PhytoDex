@@ -225,7 +225,7 @@ __marimo__/
 __pycache__/
 *.pyc
 ml/data/
-models/
+/models/
 ml-runs/
 training-results.zip
 
