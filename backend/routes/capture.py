@@ -44,7 +44,7 @@ def capture_image():
     if ext not in ALLOWED_EXTENSIONS:
         return jsonify({"error": f"Unsupported file type '{ext}'. Allowed: {sorted(ALLOWED_EXTENSIONS)}"}), 400
 
-    upload_dir = os.path.join(current_app.root_path, UPLOAD_SUBDIR)
+    upload_dir = current_app.config.get("CAPTURE_DIR", os.path.join(current_app.root_path, UPLOAD_SUBDIR))
     os.makedirs(upload_dir, exist_ok=True)
 
     filename = f"{uuid.uuid4().hex}{ext}"

@@ -37,3 +37,21 @@ CREATE TABLE IF NOT EXISTS captures (
     status TEXT DEFAULT 'pending',   -- pending -> stored -> identified (Person 4 owns the last transition)
     created_at TEXT DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS assistant_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    species TEXT,
+    message TEXT NOT NULL,
+    response_json TEXT NOT NULL,
+    source TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_assistant_logs_created_at ON assistant_logs(created_at);
+
+CREATE TABLE IF NOT EXISTS telemetry_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    hostname TEXT, uptime TEXT, cpu_temp REAL,
+    backend_ok INTEGER, db_ok INTEGER, api_ok INTEGER,
+    recorded_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_telemetry_recorded_at ON telemetry_snapshots(recorded_at);

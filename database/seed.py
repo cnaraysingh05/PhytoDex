@@ -6,9 +6,7 @@ MVP on finding a perfect external plant API.
 
 Run from repo root:
     python database/seed.py
-Safe to re-run -- it clears and re-inserts every time (fine pre-demo;
-don't run this against a database that already has real My Garden data
-you want to keep, since garden entries reference plant ids by number).
+Safe to re-run: only missing scientific names are inserted; existing IDs remain stable.
 """
 import os
 import sys
@@ -114,23 +112,23 @@ PLANTS = [
 def seed():
     init_db()
     conn = get_db()
-    conn.execute("DELETE FROM plants")
-    conn.executemany(
-        """
-        INSERT INTO plants
-            (common_name, scientific_name, category, water, light, soil,
-             temperature, difficulty, summary, image_url)
-        VALUES
-            (:common_name, :scientific_name, :category, :water, :light, :soil,
-             :temperature, :difficulty, :summary, :image_url)
-        """,
-        PLANTS,
-    )
-    conn.commit()
-    count = conn.execute("SELECT COUNT(*) AS c FROM plants").fetchone()["c"]
-    conn.close()
-    print(f"Seeded {count} plants.")
+    try:
+        with conn:
+            conn.execute("BEGIN IMMEDIATE")
+            for plant in PLANTS:
+                existing = conn.execute(
+                    "SELECT id FROM plants WHERE scientific_name = ? COLLATE NOCASE",
+                    (plant['scientific_name'],)).fetchone()
+                if existing is None:
+                    conn.execute(
+                        "INSERT INTO plants(common_name, scientific_name, category, water, light, soil, "
+                        "temperature, difficulty, summary, image_url) VALUES(:common_name, :scientific_name, "
+                        ":category, :water, :light, :soil, :temperature, :difficulty, :summary, :image_url)", plant)
+        count = conn.execute("SELECT COUNT(*) FROM plants").fetchone()[0]
+    finally:
+        conn.close()
+    print(f"Plant library ready: {count} entries. Existing plants and garden records preserved.")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     seed()
