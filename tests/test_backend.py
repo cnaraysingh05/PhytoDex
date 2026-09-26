@@ -18,7 +18,7 @@ from app import create_app
 def client(tmp_path, monkeypatch):
     # Point the app at a throwaway DB so tests never touch phytodex.db
     test_db = tmp_path / "test_phytodex.db"
-    monkeypatch.setattr(db_module, "DB_PATH", str(test_db))
+    monkeypatch.setenv("PHYTODEX_DB_PATH", str(test_db))
 
     db_module.init_db()
     conn = db_module.get_db()
