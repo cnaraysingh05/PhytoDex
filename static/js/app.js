@@ -254,27 +254,136 @@ async function homeView(ctx) {
 // ------------------------------------------------------- deck USB camera
 
 function deckCameraPanel(ctx) {
+  let cameraReady = false;
+  let previewing = false;
+  let busy = false;
+
   const status = el("div", {
     class: "deck-camera-status",
     "aria-live": "polite",
   });
 
-  const captureButton = button("Capture & analyze with deck camera", {
+  const previewImage = el("img", {
+    class: "deck-camera-preview-image",
+    alt: "Live preview from the PhytoDex deck camera",
+  });
+
+  const previewPlaceholder = el(
+    "div",
+    { class: "deck-camera-preview-placeholder" },
+    icon("camera"),
+    el("p", {
+      text: "Start the preview to frame the whole plant before capturing.",
+    })
+  );
+
+  const previewFrame = el(
+    "div",
+    { class: "deck-camera-preview-frame" },
+    previewPlaceholder
+  );
+
+  const startButton = button("Start preview", {
     variant: "secondary",
     iconName: "camera",
+    onclick: startPreview,
+  });
+
+  const stopButton = button("Stop preview", {
+    variant: "secondary",
+    onclick: () => stopPreview(),
+  });
+
+  const captureButton = button("Capture & analyze", {
+    iconName: "leaf",
     onclick: captureAndAnalyze,
   });
 
+  startButton.disabled = true;
+  stopButton.disabled = true;
   captureButton.disabled = true;
+
+  function syncButtons() {
+    startButton.disabled = busy || !cameraReady || previewing;
+    stopButton.disabled = busy || !previewing;
+    captureButton.disabled = busy || !cameraReady;
+  }
+
+  function showPlaceholder(message = "Start the preview to frame the whole plant before capturing.") {
+    previewImage.removeAttribute("src");
+
+    previewPlaceholder.replaceChildren(
+      icon("camera"),
+      el("p", { text: message })
+    );
+
+    previewFrame.replaceChildren(previewPlaceholder);
+  }
+
+  async function startPreview() {
+    if (!cameraReady || busy || previewing) return;
+
+    previewing = true;
+    previewFrame.replaceChildren(previewImage);
+
+    previewImage.src = api.cameraPreviewUrl();
+
+    status.replaceChildren(
+      el("p", {
+        class: "library-line",
+        text: "Live preview running. Frame the plant, then capture when ready.",
+      })
+    );
+
+    syncButtons();
+  }
+
+  async function stopPreview({ quiet = false } = {}) {
+    if (!previewing) return;
+
+    previewing = false;
+
+    // Removing src tells the browser to close its streaming HTTP request.
+    previewImage.removeAttribute("src");
+    showPlaceholder("Preview stopped.");
+
+    syncButtons();
+
+    try {
+      await api.stopCameraPreview();
+
+      if (!quiet && ctx.isCurrent()) {
+        status.replaceChildren(
+          el("p", {
+            class: "library-line",
+            text: "Preview stopped. Start it again or capture when ready.",
+          })
+        );
+      }
+    } catch (error) {
+      if (!quiet && ctx.isCurrent()) {
+        status.replaceChildren(
+          notice(
+            "warn",
+            "Preview stop was not confirmed",
+            "The deck will still release the camera before taking the photo."
+          )
+        );
+      }
+    }
+  }
 
   async function checkCamera() {
     status.replaceChildren(loading("Checking USB camera"));
-    captureButton.disabled = true;
+    cameraReady = false;
+    syncButtons();
 
     try {
       const camera = await api.cameraStatus();
 
       if (!ctx.isCurrent()) return;
+
+      cameraReady = camera.available;
 
       if (!camera.available) {
         status.replaceChildren(
@@ -284,21 +393,38 @@ function deckCameraPanel(ctx) {
             "PhytoDex cannot currently access the USB camera on this deck."
           )
         );
+        syncButtons();
         return;
       }
 
-      const resolution = camera.resolution
+      if (!camera.preview_available) {
+        status.replaceChildren(
+          notice(
+            "warn",
+            "Camera ready, preview unavailable",
+            "Still photos work, but FFmpeg is not available for live preview."
+          )
+        );
+        syncButtons();
+        return;
+      }
+
+      const still = camera.resolution
         ? `${camera.resolution.width}×${camera.resolution.height}`
         : "configured resolution";
+
+      const preview = camera.preview_resolution
+        ? `${camera.preview_resolution.width}×${camera.preview_resolution.height} at ${camera.preview_resolution.fps} fps`
+        : "live preview";
 
       status.replaceChildren(
         el("p", {
           class: "library-line",
-          text: `USB camera ready • ${resolution}`,
+          text: `USB camera ready • preview ${preview} • photo ${still}`,
         })
       );
 
-      captureButton.disabled = false;
+      syncButtons();
     } catch (error) {
       if (!ctx.isCurrent()) return;
 
@@ -309,18 +435,28 @@ function deckCameraPanel(ctx) {
           error.message
         )
       );
+
+      syncButtons();
     }
   }
 
   async function captureAndAnalyze() {
-    captureButton.disabled = true;
+    if (!cameraReady || busy) return;
+
+    busy = true;
+    syncButtons();
+
+    if (previewing) {
+      await stopPreview({ quiet: true });
+    }
 
     const progress = progressList(
       [
-        "Capture a photo with the deck camera",
+        "Release the live camera preview",
+        "Capture a full-resolution photo",
         "Gemini examines the captured plant",
       ],
-      "Keep the plant in front of the USB camera until capture finishes."
+      "Keep the plant in position until the full-resolution photo is captured."
     );
 
     status.replaceChildren(progress.element);
@@ -328,11 +464,17 @@ function deckCameraPanel(ctx) {
     try {
       progress.step(0);
 
-      const stored = await api.cameraCapture();
+      // Redundant by design: the backend also stops preview before capture.
+      await api.stopCameraPreview();
 
       progress.step(1);
 
+      const stored = await api.cameraCapture();
+
+      progress.step(2);
+
       let assessment;
+
       try {
         assessment = await api.analyze(stored.capture_id);
       } catch (error) {
@@ -343,7 +485,7 @@ function deckCameraPanel(ctx) {
         );
       }
 
-      progress.step(2);
+      progress.step(3);
 
       storeResult({
         ...assessment,
@@ -368,9 +510,27 @@ function deckCameraPanel(ctx) {
         )
       );
 
-      captureButton.disabled = false;
+      busy = false;
+      syncButtons();
     }
   }
+
+  previewImage.addEventListener("error", () => {
+    if (!previewing || !ctx.isCurrent()) return;
+
+    previewing = false;
+    showPlaceholder("The live preview stopped unexpectedly.");
+
+    status.replaceChildren(
+      notice(
+        "warn",
+        "Live preview stopped",
+        "Check the camera connection and try starting the preview again."
+      )
+    );
+
+    syncButtons();
+  });
 
   checkCamera();
 
@@ -385,9 +545,16 @@ function deckCameraPanel(ctx) {
       text: "Deck camera",
     }),
     el("p", {
-      text: "Use the Logitech USB camera connected directly to the Raspberry Pi.",
+      text: "Preview the Logitech USB camera, frame the plant, then capture a full-resolution photo for Gemini.",
     }),
-    el("div", { class: "btn-row" }, captureButton),
+    previewFrame,
+    el(
+      "div",
+      { class: "btn-row deck-camera-controls" },
+      startButton,
+      stopButton,
+      captureButton
+    ),
     status
   );
 }

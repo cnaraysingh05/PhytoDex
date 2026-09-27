@@ -1,22 +1,33 @@
 """Raspberry Pi USB webcam endpoints.
 
 GET  /api/camera/status
+GET  /api/camera/preview
+POST /api/camera/preview/stop
 POST /api/camera/capture
 
-A successful capture uses the same captures table and image URL contract as
-POST /api/capture, so the existing /api/analysis pipeline can consume it.
+The live preview does not create database rows or stored photos.
+Only POST /api/camera/capture creates a permanent capture.
 """
 import uuid
 from pathlib import Path
 
-from flask import Blueprint, current_app, jsonify
+from flask import (
+    Blueprint,
+    Response,
+    current_app,
+    jsonify,
+    stream_with_context,
+)
 
 from backend.models.db import get_db
 from backend.services.webcam import (
     CameraCaptureError,
+    CameraPreviewError,
     CameraUnavailable,
     camera_status,
     capture_photo,
+    preview_frames,
+    stop_preview,
 )
 
 
@@ -28,8 +39,49 @@ def camera_status_route():
     return jsonify(camera_status())
 
 
+@camera_bp.get("/api/camera/preview")
+def camera_preview_route():
+    status = camera_status()
+
+    if not status["preview_available"]:
+        return jsonify(
+            error="USB camera preview is unavailable",
+            code="camera_preview_unavailable",
+        ), 503
+
+    try:
+        stream = preview_frames()
+    except (CameraUnavailable, CameraPreviewError) as exc:
+        return jsonify(
+            error=str(exc),
+            code="camera_preview_unavailable",
+        ), 503
+
+    return Response(
+        stream_with_context(stream),
+        content_type="multipart/x-mixed-replace; boundary=frame",
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            "Pragma": "no-cache",
+        },
+    )
+
+
+@camera_bp.post("/api/camera/preview/stop")
+def camera_preview_stop_route():
+    was_running = stop_preview()
+
+    return jsonify(
+        status="stopped",
+        was_running=was_running,
+    )
+
+
 @camera_bp.post("/api/camera/capture")
 def camera_capture_route():
+    # Always release a preview process before taking the full-resolution still.
+    stop_preview()
+
     capture_dir = Path(current_app.config["CAPTURE_DIR"])
     capture_dir.mkdir(parents=True, exist_ok=True)
 
@@ -54,7 +106,8 @@ def camera_capture_route():
     conn = get_db()
     try:
         cursor = conn.execute(
-            "INSERT INTO captures (filename, image_url, status) VALUES (?, ?, 'stored')",
+            "INSERT INTO captures (filename, image_url, status) "
+            "VALUES (?, ?, 'stored')",
             (filename, image_url),
         )
         conn.commit()

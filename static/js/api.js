@@ -129,6 +129,15 @@ export const api = {
   // Raspberry Pi USB webcam.
   cameraStatus: () => request("/api/camera/status", { timeoutMs: 6000 }),
 
+  cameraPreviewUrl: () =>
+    `/api/camera/preview?t=${Date.now()}`,
+
+  stopCameraPreview: () =>
+    request("/api/camera/preview/stop", {
+      method: "POST",
+      timeoutMs: 6000,
+    }),
+
   cameraCapture: () =>
     request("/api/camera/capture", {
       method: "POST",

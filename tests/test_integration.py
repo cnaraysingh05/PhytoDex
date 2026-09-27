@@ -255,3 +255,76 @@ def test_camera_unavailable_is_explicit(client):
 
     assert response.status_code == 503
     assert response.json['code'] == 'camera_unavailable'
+
+
+def test_camera_preview_route_streams_mjpeg(client):
+    frame = (
+        b"--frame\r\n"
+        b"Content-Type: image/jpeg\r\n"
+        b"\r\n"
+        b"\xff\xd8fake-jpeg\xff\xd9"
+        b"\r\n"
+    )
+
+    fake_status = {
+        'preview_available': True,
+    }
+
+    with patch(
+        'backend.routes.camera.camera_status',
+        return_value=fake_status,
+    ), patch(
+        'backend.routes.camera.preview_frames',
+        return_value=iter([frame]),
+    ):
+        response = client.get('/api/camera/preview')
+
+    assert response.status_code == 200
+    assert response.mimetype == 'multipart/x-mixed-replace'
+    assert b'fake-jpeg' in response.data
+
+
+def test_camera_preview_unavailable_is_explicit(client):
+    with patch(
+        'backend.routes.camera.camera_status',
+        return_value={'preview_available': False},
+    ):
+        response = client.get('/api/camera/preview')
+
+    assert response.status_code == 503
+    assert response.json['code'] == 'camera_preview_unavailable'
+
+
+def test_camera_preview_can_be_stopped(client):
+    with patch(
+        'backend.routes.camera.stop_preview',
+        return_value=True,
+    ):
+        response = client.post('/api/camera/preview/stop')
+
+    assert response.status_code == 200
+    assert response.json == {
+        'status': 'stopped',
+        'was_running': True,
+    }
+
+
+def test_full_capture_releases_preview_first(client):
+    def fake_capture(output_path):
+        Image.new('RGB', (1280, 720), 'green').save(output_path, 'JPEG')
+        return {
+            'device': '/dev/v4l/by-id/test-camera-video-index0',
+            'width': 1280,
+            'height': 720,
+        }
+
+    with patch(
+        'backend.routes.camera.stop_preview'
+    ) as stop, patch(
+        'backend.routes.camera.capture_photo',
+        side_effect=fake_capture,
+    ):
+        response = client.post('/api/camera/capture')
+
+    assert response.status_code == 201
+    stop.assert_called_once()

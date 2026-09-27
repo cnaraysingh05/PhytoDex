@@ -188,9 +188,15 @@ def test_deck_camera_frontend_is_wired():
     api_js = (ROOT / "static" / "js" / "api.js").read_text()
 
     assert "deckCameraPanel" in app_js
-    assert "Capture & analyze with deck camera" in app_js
+    assert "Capture & analyze" in app_js
     assert "api.cameraStatus()" in app_js
+    assert "api.cameraPreviewUrl()" in app_js
+    assert "api.stopCameraPreview()" in app_js
     assert "api.cameraCapture()" in app_js
+    assert "Start preview" in app_js
+    assert "Stop preview" in app_js
 
     assert 'request("/api/camera/status"' in api_js
+    assert "/api/camera/preview?t=" in api_js
+    assert 'request("/api/camera/preview/stop"' in api_js
     assert 'request("/api/camera/capture"' in api_js
