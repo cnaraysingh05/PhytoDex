@@ -39,7 +39,7 @@ jobs:
       - name: Run offline tests
         run: python -m pytest --junitxml=test-results.xml
       - name: Require strict integration readiness
-        if: github.ref == 'refs/heads/main' || github.event_nameif: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main.test' || github.event_name == 'pull_request' == 'pull_request'
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/main.test' || github.event_name == 'pull_request'
         run: python scripts/check_readiness.py --require-team
       - name: Attach test results
         if: always()
