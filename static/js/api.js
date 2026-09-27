@@ -125,4 +125,22 @@ export const api = {
 
   // GET /api/system -> live status from the machine running PhytoDex.
   system: () => request("/api/system", { timeoutMs: 6000 }),
+
+  // Raspberry Pi USB webcam.
+  cameraStatus: () => request("/api/camera/status", { timeoutMs: 6000 }),
+
+  cameraPreviewUrl: () =>
+    `/api/camera/preview?t=${Date.now()}`,
+
+  stopCameraPreview: () =>
+    request("/api/camera/preview/stop", {
+      method: "POST",
+      timeoutMs: 6000,
+    }),
+
+  cameraCapture: () =>
+    request("/api/camera/capture", {
+      method: "POST",
+      timeoutMs: 30000,
+    }),
 };
