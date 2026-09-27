@@ -103,5 +103,5 @@ def test_frontend_sends_only_a_user_chosen_plant_id():
     # Garden entries are created with the species the user picked from the list;
     # there is no automatic plant_name -> plant_id step in the browser code.
     app_js = (ROOT / "static" / "js" / "app.js").read_text()
-    assert "createGardenPlant(Number(species.value)" in app_js
+    assert "createGardenPlant(species.value ? Number(species.value) : null, name)" in app_js
     assert "library_match" not in app_js

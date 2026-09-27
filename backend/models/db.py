@@ -1,4 +1,4 @@
-﻿"""SQLite connection helper for PhytoDex.
+"""SQLite connection helper for PhytoDex.
 
 This file was missing from this branch even though nine other files import
 from it (backend/routes/plants.py, garden.py, capture.py, photo_bridge.py,
@@ -52,6 +52,8 @@ def init_db():
         conn.executescript(f.read())
     conn.commit()
     conn.close()
+    from backend.models.migrations import allow_unknown_species
+    allow_unknown_species(path)
 
 
 if __name__ == "__main__":

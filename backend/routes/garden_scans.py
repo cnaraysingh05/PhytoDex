@@ -11,7 +11,7 @@ POST /api/garden/<id>/scans    {"capture_id": int} -- add that photo's scan to
                                same pipeline as POST /api/analysis.
 
 Saving a first scan as a new plant = POST /api/garden {plant_id, nickname}
-(plant_id is the species the user confirmed), then POST /api/garden/<id>/scans.
+(plant_id is a confirmed species or null for unidentified plants), then POST /api/garden/<id>/scans.
 """
 from flask import Blueprint, jsonify, request
 

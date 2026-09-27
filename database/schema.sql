@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS plants (
 
 CREATE TABLE IF NOT EXISTS garden (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    plant_id INTEGER NOT NULL,
+    plant_id INTEGER,
     nickname TEXT,
     date_added TEXT DEFAULT (datetime('now')),
     notes TEXT,

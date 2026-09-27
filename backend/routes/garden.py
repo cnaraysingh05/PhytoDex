@@ -22,7 +22,7 @@ def list_garden():
             garden.notes, garden.last_watered, garden.created_at,
             plants.common_name, plants.scientific_name, plants.image_url
         FROM garden
-        JOIN plants ON garden.plant_id = plants.id
+        LEFT JOIN plants ON garden.plant_id = plants.id
         ORDER BY garden.created_at DESC
         """
     ).fetchall()
@@ -32,24 +32,32 @@ def list_garden():
 
 @garden_bp.route("/api/garden", methods=["POST"])
 def add_to_garden():
-    data = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify(error="Provide a JSON object"), 400
     plant_id = data.get("plant_id")
-
-    if not plant_id:
-        return jsonify({"error": "plant_id is required"}), 400
+    if plant_id is not None and (type(plant_id) is not int or plant_id < 1):
+        return jsonify(error="plant_id must be a positive integer or null"), 400
+    nickname = data.get("nickname")
+    if nickname is not None and (not isinstance(nickname, str) or len(nickname.strip()) > 60):
+        return jsonify(error="Nickname must be text of at most 60 characters"), 400
+    nickname = nickname.strip() if isinstance(nickname, str) else None
+    if plant_id is None and not nickname:
+        return jsonify(error="Give this unidentified plant a nickname"), 400
 
     conn = get_db()
-    plant = conn.execute("SELECT id FROM plants WHERE id = ?", (plant_id,)).fetchone()
-    if plant is None:
-        conn.close()
-        return jsonify({"error": f"No plant with id {plant_id}"}), 404
+    if plant_id is not None:
+        plant = conn.execute("SELECT id FROM plants WHERE id = ?", (plant_id,)).fetchone()
+        if plant is None:
+            conn.close()
+            return jsonify({"error": f"No plant with id {plant_id}"}), 404
 
     cur = conn.execute(
         """
         INSERT INTO garden (plant_id, nickname, notes, last_watered)
         VALUES (?, ?, ?, ?)
         """,
-        (plant_id, data.get("nickname"), data.get("notes"), data.get("last_watered")),
+        (plant_id, nickname, data.get("notes"), data.get("last_watered")),
     )
     conn.commit()
     new_id = cur.lastrowid

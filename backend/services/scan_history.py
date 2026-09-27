@@ -2,7 +2,7 @@
 
   * species      -- a row in `plants` (the PlantDex library)
   * garden plant -- a row in `garden`: one plant the user owns. Its plant_id is
-                    always the species the user chose; nothing here guesses it.
+                    the species the user chose, or NULL if unidentified; never guessed.
   * scan         -- a photo_assessments row linked to a garden plant. Scans are
                     only ever added, never overwritten.
 """
@@ -20,7 +20,7 @@ GARDEN_SELECT = """
            garden.notes, garden.last_watered, garden.created_at,
            plants.common_name, plants.scientific_name, plants.image_url
     FROM garden
-    JOIN plants ON garden.plant_id = plants.id
+    LEFT JOIN plants ON garden.plant_id = plants.id
 """
 
 

@@ -316,7 +316,8 @@ async function resultView(ctx) {
 
 // Exact name match only, shown as a suggestion the user has to accept.
 function suggestSpecies(plants, result) {
-  const names = [result.scientific_name, result.plant_name].filter(Boolean).map((name) => name.trim().toLowerCase());
+  const names = [result.scientific_name, result.plant_name].filter(Boolean)
+    .flatMap((name) => name.split(/[()]/)).map((name) => name.trim().toLowerCase()).filter(Boolean);
   return plants.find((plant) => names.includes((plant.scientific_name || "").toLowerCase())
     || names.includes((plant.common_name || "").toLowerCase())) || null;
 }
@@ -330,13 +331,12 @@ function savePanel(result) {
 
   const nickname = el("input", { id: "nickname", name: "nickname", maxlength: "60", autocomplete: "off", placeholder: "Desk Pothos", required: true });
   const nicknameError = el("p", { class: "field-error", id: "nickname-error", role: "alert" });
-  const species = el("select", { id: "species", name: "species", disabled: true, required: true },
-    el("option", { value: "", text: "Loading PlantDex species" }));
+  const species = el("select", { id: "species", name: "species", disabled: true },
+    el("option", { value: "", text: "Unknown / not linked to PlantDex" }));
   const speciesError = el("p", { class: "field-error", id: "species-error", role: "alert" });
   const suggestion = el("div", { "aria-live": "polite" });
   const status = el("div", { "aria-live": "polite" });
   const saveButton = button("Save to My Garden", { iconName: "pot", type: "submit" });
-  let speciesReady = false;
 
   if (result.saved_garden_id) {
     // The plant was created but its first scan wasn't linked (connection lost).
@@ -345,22 +345,21 @@ function savePanel(result) {
 
   api.plants().then((plants) => {
     species.replaceChildren(
-      el("option", { value: "", text: "Choose a PlantDex species" }),
+      el("option", { value: "", text: "Unknown / not linked to PlantDex" }),
       ...plants.map((plant) => el("option", { value: String(plant.id), text: plant.scientific_name ? `${plant.common_name} (${plant.scientific_name})` : plant.common_name })));
     species.disabled = false;
-    speciesReady = true;
     const match = suggestSpecies(plants, result);
     if (match) {
       suggestion.replaceChildren(el("p", { class: "hint" }, `PlantDex has a species with the same name as Gemini's guess: ${match.common_name}. `,
         button(`Use ${match.common_name}`, { variant: "secondary", onclick: () => { species.value = String(match.id); speciesError.textContent = ""; } })));
     } else {
       suggestion.replaceChildren(el("p", { class: "hint", text: result.plant_name
-        ? `"${result.plant_name}" isn't in PlantDex. My Garden plants are linked to a PlantDex species, so choose one only if it's truly this plant.`
-        : "Choose the species if you know it. My Garden plants are linked to a PlantDex species." }));
+        ? `Gemini suggested "${result.plant_name}". You can save it without confirming a species.`
+        : "Link a species only if you know it. Otherwise, save it as unidentified." }));
     }
   }).catch((error) => {
     species.replaceChildren(el("option", { value: "", text: "PlantDex list unavailable" }));
-    speciesError.textContent = `The species list couldn't load, so this plant can't be saved yet. ${error.message}`;
+    speciesError.textContent = `The species list couldn't load. You can still save this plant without a species. ${error.message}`;
   });
 
   async function save(event) {
@@ -373,17 +372,12 @@ function savePanel(result) {
       nickname.focus();
       return;
     }
-    if (!result.saved_garden_id && (!speciesReady || !species.value)) {
-      speciesError.textContent = "Choose the PlantDex species for this plant.";
-      species.focus();
-      return;
-    }
     saveButton.disabled = true;
     status.replaceChildren(loading("Saving to My Garden"));
     try {
       let gardenId = result.saved_garden_id;
       if (!gardenId) {
-        const created = await api.createGardenPlant(Number(species.value), name);
+        const created = await api.createGardenPlant(species.value ? Number(species.value) : null, name);
         gardenId = created.id;
         result.saved_garden_id = gardenId;
         storeResult(result);
@@ -407,7 +401,7 @@ function savePanel(result) {
     el("h2", { text: "Save this plant to My Garden" }),
     el("p", { class: "lead", text: "Saving starts a history for this one plant. Rescan it later to compare scans over time." }),
     result.saved_garden_id ? null : el("div", { class: "field" }, el("label", { for: "nickname", text: "Nickname" }), nickname, nicknameError),
-    result.saved_garden_id ? null : el("div", { class: "field" }, el("label", { for: "species", text: "PlantDex species" }), species, suggestion, speciesError),
+    result.saved_garden_id ? null : el("div", { class: "field" }, el("label", { for: "species", text: "PlantDex species (optional)" }), species, suggestion, speciesError),
     el("div", { class: "btn-row" }, saveButton), status);
 }
 

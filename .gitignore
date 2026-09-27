@@ -244,3 +244,6 @@ static/uploads/captures/*
 *.sqlite-*
 *.sqlite3
 *.sqlite3-*
+
+# Private SQLite migration backups
+*.before-optional-species-*.bak

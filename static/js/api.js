@@ -91,7 +91,7 @@ export const api = {
   gardenPlant: (gardenId) => request(`/api/garden/${gardenId}`),
 
   // POST /api/garden {plant_id, nickname} -> new garden entry.
-  // plant_id is always the species the user chose; the app never guesses it.
+  // plant_id is the chosen species or null; the app never confirms a guess.
   createGardenPlant: (plantId, nickname) =>
     request("/api/garden", { method: "POST", json: { plant_id: plantId, nickname } }),
 
