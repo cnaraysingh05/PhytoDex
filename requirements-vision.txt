@@ -1,0 +1,4 @@
+-r requirements-ai.txt
+numpy>=1.26,<3
+Pillow>=10,<13
+ai-edge-litert>=2.0,<3; platform_system == 'Linux'

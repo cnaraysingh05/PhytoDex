@@ -1,4 +1,3 @@
-Flask>=3.1.3,<4
-python-dotenv>=1.0,<2
-google-genai>=1.75,<2
-pydantic>=2.9,<3
+-r requirements-ai.txt
+Pillow>=10,<13
+psutil>=6,<8
