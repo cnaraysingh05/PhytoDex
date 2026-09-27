@@ -392,3 +392,117 @@ h3 { font-size: 1rem; margin: 0 0 .35rem; }
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Ask Phyto ---------- */
+.assistant-form {
+  max-width: 44rem;
+  padding: 1.2rem 1.3rem;
+  background: var(--sheet);
+  border: 1.5px solid var(--vein);
+  border-radius: var(--radius);
+}
+
+.assistant-output {
+  max-width: 48rem;
+  margin-top: 1.5rem;
+}
+
+.assistant-result {
+  display: grid;
+  gap: 1rem;
+  padding: 1.3rem 1.4rem;
+  background: var(--sheet);
+  border: 1.5px solid var(--vein);
+  border-radius: var(--radius);
+}
+
+.assistant-source {
+  display: grid;
+  gap: .15rem;
+  padding: .8rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: .94rem;
+}
+
+.assistant-source strong {
+  font-size: 1rem;
+}
+
+.assistant-source span {
+  color: inherit;
+  opacity: .9;
+}
+
+.assistant-source-live {
+  background: var(--healthy-bg);
+  color: var(--healthy);
+}
+
+.assistant-source-fallback {
+  background: var(--attention-bg);
+  color: #5e3d06;
+}
+
+.guidance-urgency {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .65rem;
+  padding-bottom: .9rem;
+  border-bottom: 1px solid var(--vein);
+  color: var(--ink-soft);
+}
+
+.urgency {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: .2rem .7rem;
+}
+
+.urgency-low {
+  background: var(--healthy-bg);
+  color: var(--healthy);
+}
+
+.urgency-medium {
+  background: var(--attention-bg);
+  color: var(--attention);
+}
+
+.urgency-high {
+  background: var(--concerning-bg);
+  color: var(--concerning);
+}
+
+.urgency-unknown {
+  background: var(--unknown-bg);
+  color: var(--unknown);
+}
+
+.guidance-section {
+  padding-top: .2rem;
+}
+
+.guidance-section h2 {
+  margin-bottom: .45rem;
+}
+
+.guidance-section ul {
+  margin: 0;
+  padding-left: 1.3rem;
+}
+
+.guidance-section li {
+  margin: .3rem 0;
+}
+
+.guidance-uncertainty {
+  padding: .9rem 1rem;
+  background: var(--lilac);
+  border-radius: var(--radius-sm);
+}
+
+.guidance-uncertainty p {
+  margin: 0;
+  color: var(--ink-soft);
+}
