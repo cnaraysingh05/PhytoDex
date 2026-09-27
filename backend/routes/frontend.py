@@ -18,6 +18,8 @@ PAGE_ROUTES = (
     "/garden",
     "/garden/<int:garden_id>",
     "/garden/<int:garden_id>/rescan",
+    "/plantdex",
+    "/plantdex/<int:plant_id>",
 )
 
 

@@ -25,7 +25,16 @@ def client():
         yield test_client
 
 
-@pytest.mark.parametrize("path", ["/", "/scan", "/scan/12", "/garden", "/garden/3", "/garden/3/rescan"])
+@pytest.mark.parametrize("path", [
+    "/",
+    "/scan",
+    "/scan/12",
+    "/garden",
+    "/garden/3",
+    "/garden/3/rescan",
+    "/plantdex",
+    "/plantdex/1",
+])
 def test_every_screen_address_serves_the_app(client, path):
     # Refreshing any screen asks Flask for that address directly.
     response = client.get(path)
@@ -105,3 +114,19 @@ def test_frontend_sends_only_a_user_chosen_plant_id():
     app_js = (ROOT / "static" / "js" / "app.js").read_text()
     assert "createGardenPlant(species.value ? Number(species.value) : null, name)" in app_js
     assert "library_match" not in app_js
+
+
+def test_plantdex_frontend_is_wired(client):
+    page = client.get("/plantdex").get_data(as_text=True)
+    assert 'href="/plantdex"' in page
+    assert 'data-nav="plantdex"' in page
+
+    app_js = (ROOT / "static" / "js" / "app.js").read_text()
+    api_js = (ROOT / "static" / "js" / "api.js").read_text()
+
+    assert "plantDexView" in app_js
+    assert "plantDexPlantView" in app_js
+    assert "/plantdex/${plant.id}" in app_js
+
+    assert 'params.set("q", query.trim())' in api_js
+    assert "request(`/api/plants/${plantId}`)" in api_js

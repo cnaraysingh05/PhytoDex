@@ -24,6 +24,8 @@ const ROUTES = [
   [/^\/garden$/, gardenView, "garden"],
   [/^\/garden\/(\d+)$/, plantView, "garden"],
   [/^\/garden\/(\d+)\/rescan$/, rescanView, "garden"],
+  [/^\/plantdex$/, plantDexView, "plantdex"],
+  [/^\/plantdex\/(\d+)$/, plantDexPlantView, "plantdex"],
 ];
 
 export function navigate(path, { replace = false, toast = null } = {}) {
@@ -403,6 +405,240 @@ function savePanel(result) {
     result.saved_garden_id ? null : el("div", { class: "field" }, el("label", { for: "nickname", text: "Nickname" }), nickname, nicknameError),
     result.saved_garden_id ? null : el("div", { class: "field" }, el("label", { for: "species", text: "PlantDex species (optional)" }), species, suggestion, speciesError),
     el("div", { class: "btn-row" }, saveButton), status);
+}
+
+// --------------------------------------------------------------- PlantDex
+
+function plantDexCard(plant) {
+  const details = [plant.category, plant.difficulty].filter(Boolean);
+
+  return el("li", {},
+    el("a", {
+      class: "plant-card plantdex-card",
+      href: `/plantdex/${plant.id}`,
+      "data-link": true,
+    },
+      el("div", { class: "thumb" },
+        photo(plant.image_url, plant.common_name || "Plant")),
+      el("div", { class: "body" },
+        el("span", {
+          class: "nick",
+          text: plant.common_name || "Unnamed plant",
+        }),
+        plant.scientific_name
+          ? el("span", {
+              class: "species sci-name",
+              text: plant.scientific_name,
+            })
+          : null,
+        details.length
+          ? el("div", { class: "meta" },
+              details.map((value) => el("span", { text: value })))
+          : null
+      )
+    )
+  );
+}
+
+async function plantDexView(ctx) {
+  ctx.title("PlantDex");
+
+  const search = el("input", {
+    id: "plantdex-search",
+    type: "search",
+    name: "q",
+    placeholder: "Search Pothos, Monstera, basil...",
+    autocomplete: "off",
+    enterkeyhint: "search",
+  });
+
+  const count = el("p", {
+    class: "library-line plantdex-count",
+    "aria-live": "polite",
+  });
+
+  const results = el("div", {
+    class: "plantdex-results",
+    "aria-live": "polite",
+  });
+
+  let requestNumber = 0;
+
+  async function loadPlants(query = "") {
+    const currentRequest = ++requestNumber;
+    results.replaceChildren(loading(query ? "Searching PlantDex" : "Loading PlantDex"));
+
+    try {
+      const plants = await api.plants(query);
+
+      if (!ctx.isCurrent() || currentRequest !== requestNumber) return;
+
+      const description = query
+        ? `${plants.length} ${plants.length === 1 ? "match" : "matches"} for "${query}"`
+        : `${plants.length} ${plants.length === 1 ? "plant" : "plants"} in the library`;
+
+      count.textContent = description;
+
+      if (!plants.length) {
+        results.replaceChildren(
+          el("section", { class: "empty-state" },
+            icon("sprout"),
+            el("h2", { text: "No plants found" }),
+            el("p", {
+              text: `PlantDex does not have a plant matching "${query}". Try another common or scientific name.`,
+            })
+          )
+        );
+        return;
+      }
+
+      results.replaceChildren(
+        el("ul", { class: "garden-grid plantdex-grid" },
+          plants.map(plantDexCard))
+      );
+    } catch (error) {
+      if (!ctx.isCurrent() || currentRequest !== requestNumber) return;
+
+      count.textContent = "";
+      results.replaceChildren(
+        notice(
+          "error",
+          "PlantDex couldn't load",
+          error.message,
+          button("Try again", {
+            onclick: () => loadPlants(search.value.trim()),
+          })
+        )
+      );
+    }
+  }
+
+  const clearButton = button("Clear", {
+    variant: "secondary",
+    onclick: () => {
+      search.value = "";
+      search.focus();
+      loadPlants();
+    },
+  });
+
+  const form = el("form", {
+    class: "plantdex-search",
+    role: "search",
+    onsubmit: (event) => {
+      event.preventDefault();
+      loadPlants(search.value.trim());
+    },
+  },
+    el("div", { class: "field" },
+      el("label", {
+        for: "plantdex-search",
+        text: "Search the plant library",
+      }),
+      search
+    ),
+    el("div", { class: "btn-row" },
+      button("Search", { type: "submit", iconName: "leaf" }),
+      clearButton
+    )
+  );
+
+  ctx.show(
+    el("div", { class: "page-head" },
+      el("h1", { text: "PlantDex" }),
+      el("p", {
+        text: "Browse the care library by common or scientific name, then open a plant for its saved care profile.",
+      })
+    ),
+    form,
+    count,
+    results
+  );
+
+  await loadPlants();
+}
+
+async function plantDexPlantView(ctx) {
+  const [plantId] = ctx.params;
+
+  let plant;
+
+  try {
+    plant = await api.plant(plantId);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      ctx.title("Plant not found");
+      ctx.show(
+        backLink("/plantdex", "PlantDex"),
+        el("div", { class: "page-head" },
+          el("h1", { text: "Plant not found" }),
+          el("p", {
+            text: "This PlantDex entry does not exist or may have been removed.",
+          })
+        ),
+        linkButton("Back to PlantDex", "/plantdex")
+      );
+      return;
+    }
+
+    throw error;
+  }
+
+  ctx.title(plant.common_name || "PlantDex plant");
+
+  const careFields = [
+    ["Water", plant.water],
+    ["Light", plant.light],
+    ["Soil", plant.soil],
+    ["Temperature", plant.temperature],
+    ["Difficulty", plant.difficulty],
+    ["Category", plant.category],
+  ].filter(([, value]) => value);
+
+  const careGrid = el("dl", { class: "care-grid" },
+    careFields.flatMap(([label, value]) => [
+      el("div", { class: "care-item" },
+        el("dt", { text: label }),
+        el("dd", { text: value })
+      ),
+    ])
+  );
+
+  ctx.show(
+    backLink("/plantdex", "PlantDex"),
+    el("div", { class: "plantdex-profile" },
+      el("figure", { class: "mount plantdex-photo", style: "margin:0" },
+        photo(
+          plant.image_url,
+          plant.common_name || "PlantDex plant",
+          { eager: true }
+        )
+      ),
+      el("article", { class: "label-card plantdex-details" },
+        el("span", {
+          class: "label-source",
+          text: "PlantDex care profile",
+        }),
+        el("h1", {
+          class: "plant-title",
+          text: plant.common_name || "Unnamed plant",
+        }),
+        plant.scientific_name
+          ? el("p", {
+              class: "sci-name",
+              text: plant.scientific_name,
+            })
+          : null,
+        plant.summary
+          ? el("p", {
+              class: "plantdex-summary",
+              text: plant.summary,
+            })
+          : null,
+        careGrid
+      )
+    )
+  );
 }
 
 // ---------------------------------------------------------------- garden
