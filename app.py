@@ -18,8 +18,9 @@ def create_app(test_config=None):
     from backend.routes.plants import plants_bp
     from backend.routes.garden import garden_bp
     from backend.routes.capture import capture_bp
+    from backend.routes.camera import camera_bp
     from backend.routes.assistant import assistant_bp
-    for bp in [health_bp, plants_bp, garden_bp, capture_bp, assistant_bp]:
+    for bp in [health_bp, plants_bp, garden_bp, capture_bp, camera_bp, assistant_bp]:
         app.register_blueprint(bp)
     # Each stage can be installed separately. An existing module with an import
     # bug is never silently swallowed; only an absent optional module is skipped.

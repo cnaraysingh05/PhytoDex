@@ -623,3 +623,26 @@ h3 { font-size: 1rem; margin: 0 0 .35rem; }
   color: var(--ink-soft);
   font-size: .92rem;
 }
+
+/* ---------- Raspberry Pi USB camera ---------- */
+.deck-camera-panel {
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.1rem;
+  background: var(--sheet);
+  border: 1.5px solid var(--vein);
+  border-radius: var(--radius);
+}
+
+.deck-camera-panel h2 {
+  margin-top: 0;
+  margin-bottom: .35rem;
+}
+
+.deck-camera-panel > p {
+  margin-top: 0;
+  color: var(--ink-soft);
+}
+
+.deck-camera-status {
+  margin-top: .8rem;
+}

@@ -166,3 +166,92 @@ def test_unavailable_host_metrics_do_not_crash(client):
         response = client.get('/api/system')
     assert response.status_code == 200
     assert response.json['network']['status'] == 'unavailable'
+
+
+def test_camera_status_route_reports_service_state(client):
+    fake_status = {
+        'available': True,
+        'device': '/dev/v4l/by-id/test-camera-video-index0',
+        'fswebcam_available': True,
+        'device_available': True,
+        'resolution': {'width': 1280, 'height': 720},
+    }
+
+    with patch('backend.routes.camera.camera_status', return_value=fake_status):
+        response = client.get('/api/camera/status')
+
+    assert response.status_code == 200
+    assert response.json == fake_status
+
+
+def test_camera_capture_stores_photo_and_returns_existing_capture_contract(client, tmp_path):
+    def fake_capture(output_path):
+        Image.new('RGB', (1280, 720), 'green').save(output_path, 'JPEG')
+        return {
+            'device': '/dev/v4l/by-id/test-camera-video-index0',
+            'width': 1280,
+            'height': 720,
+        }
+
+    with patch('backend.routes.camera.capture_photo', side_effect=fake_capture):
+        response = client.post('/api/camera/capture')
+
+    assert response.status_code == 201
+    assert response.json['status'] == 'stored'
+    assert isinstance(response.json['capture_id'], int)
+    assert response.json['image_url'].startswith('/static/uploads/captures/')
+    assert response.json['camera']['width'] == 1280
+    assert response.json['camera']['height'] == 720
+
+    conn = get_db()
+    try:
+        row = conn.execute(
+            'SELECT filename, image_url, status FROM captures WHERE id = ?',
+            (response.json['capture_id'],),
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert row is not None
+    assert row['status'] == 'stored'
+    assert row['image_url'] == response.json['image_url']
+
+
+def test_camera_capture_can_flow_into_existing_analysis(client):
+    def fake_capture(output_path):
+        Image.new('RGB', (1280, 720), 'green').save(output_path, 'JPEG')
+        return {
+            'device': '/dev/v4l/by-id/test-camera-video-index0',
+            'width': 1280,
+            'height': 720,
+        }
+
+    with patch('backend.routes.camera.capture_photo', side_effect=fake_capture):
+        capture = client.post('/api/camera/capture')
+
+    assert capture.status_code == 201
+
+    with patch('backend.routes.photo_bridge.diagnosis_builder', return_value=lambda raw: raw), \
+         patch('backend.routes.photo_bridge.classify_leaf',
+               return_value={'plant_name': 'Tentative test plant'}):
+        analysis = client.post(
+            '/api/analysis',
+            json={'capture_id': capture.json['capture_id']},
+        )
+
+    assert analysis.status_code == 200
+    assert analysis.json['source'] == 'gemini'
+    assert analysis.json['plant_name'] == 'Tentative test plant'
+
+
+def test_camera_unavailable_is_explicit(client):
+    from backend.services.webcam import CameraUnavailable
+
+    with patch(
+        'backend.routes.camera.capture_photo',
+        side_effect=CameraUnavailable('The configured USB camera is not connected'),
+    ):
+        response = client.post('/api/camera/capture')
+
+    assert response.status_code == 503
+    assert response.json['code'] == 'camera_unavailable'

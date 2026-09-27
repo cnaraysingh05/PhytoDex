@@ -181,3 +181,16 @@ def test_system_frontend_does_not_fake_missing_metrics():
     assert '"Unavailable"' in app_js
     assert 'status.cpu_temperature_c.toFixed(1)' in app_js
     assert 'status.hardware_model || "Unavailable"' in app_js
+
+
+def test_deck_camera_frontend_is_wired():
+    app_js = (ROOT / "static" / "js" / "app.js").read_text()
+    api_js = (ROOT / "static" / "js" / "api.js").read_text()
+
+    assert "deckCameraPanel" in app_js
+    assert "Capture & analyze with deck camera" in app_js
+    assert "api.cameraStatus()" in app_js
+    assert "api.cameraCapture()" in app_js
+
+    assert 'request("/api/camera/status"' in api_js
+    assert 'request("/api/camera/capture"' in api_js

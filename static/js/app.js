@@ -251,6 +251,147 @@ async function homeView(ctx) {
   }
 }
 
+// ------------------------------------------------------- deck USB camera
+
+function deckCameraPanel(ctx) {
+  const status = el("div", {
+    class: "deck-camera-status",
+    "aria-live": "polite",
+  });
+
+  const captureButton = button("Capture & analyze with deck camera", {
+    variant: "secondary",
+    iconName: "camera",
+    onclick: captureAndAnalyze,
+  });
+
+  captureButton.disabled = true;
+
+  async function checkCamera() {
+    status.replaceChildren(loading("Checking USB camera"));
+    captureButton.disabled = true;
+
+    try {
+      const camera = await api.cameraStatus();
+
+      if (!ctx.isCurrent()) return;
+
+      if (!camera.available) {
+        status.replaceChildren(
+          notice(
+            "warn",
+            "Deck camera unavailable",
+            "PhytoDex cannot currently access the USB camera on this deck."
+          )
+        );
+        return;
+      }
+
+      const resolution = camera.resolution
+        ? `${camera.resolution.width}×${camera.resolution.height}`
+        : "configured resolution";
+
+      status.replaceChildren(
+        el("p", {
+          class: "library-line",
+          text: `USB camera ready • ${resolution}`,
+        })
+      );
+
+      captureButton.disabled = false;
+    } catch (error) {
+      if (!ctx.isCurrent()) return;
+
+      status.replaceChildren(
+        notice(
+          "warn",
+          "Deck camera unavailable",
+          error.message
+        )
+      );
+    }
+  }
+
+  async function captureAndAnalyze() {
+    captureButton.disabled = true;
+
+    const progress = progressList(
+      [
+        "Capture a photo with the deck camera",
+        "Gemini examines the captured plant",
+      ],
+      "Keep the plant in front of the USB camera until capture finishes."
+    );
+
+    status.replaceChildren(progress.element);
+
+    try {
+      progress.step(0);
+
+      const stored = await api.cameraCapture();
+
+      progress.step(1);
+
+      let assessment;
+      try {
+        assessment = await api.analyze(stored.capture_id);
+      } catch (error) {
+        throw stepError(
+          "Photo captured, but not analyzed",
+          analysisErrorMessage(error),
+          "Try the analysis again"
+        );
+      }
+
+      progress.step(2);
+
+      storeResult({
+        ...assessment,
+        image_url: stored.image_url,
+        analyzed_at: new Date().toISOString(),
+        saved_garden_id: null,
+      });
+
+      navigate(`/scan/${stored.capture_id}`);
+    } catch (error) {
+      if (!ctx.isCurrent()) return;
+
+      status.replaceChildren(
+        notice(
+          "error",
+          error.title || "Deck camera capture failed",
+          error.message,
+          button("Try again", {
+            variant: "secondary",
+            onclick: captureAndAnalyze,
+          })
+        )
+      );
+
+      captureButton.disabled = false;
+    }
+  }
+
+  checkCamera();
+
+  return el(
+    "section",
+    {
+      class: "deck-camera-panel",
+      "aria-labelledby": "deck-camera-title",
+    },
+    el("h2", {
+      id: "deck-camera-title",
+      text: "Deck camera",
+    }),
+    el("p", {
+      text: "Use the Logitech USB camera connected directly to the Raspberry Pi.",
+    }),
+    el("div", { class: "btn-row" }, captureButton),
+    status
+  );
+}
+
 // ------------------------------------------------------------ scan a plant
 
 async function scanView(ctx) {
@@ -277,7 +418,8 @@ async function scanView(ctx) {
   ctx.show(
     el("div", { class: "page-head" },
       el("h1", { text: "Scan a plant" }),
-      el("p", { text: "Take a new photo or choose one you already have. Gemini describes what it can see; it can't test soil or roots." })),
+      el("p", { text: "Take a new photo, choose one you already have, or use the USB camera connected to the deck. Gemini describes what it can see; it can't test soil or roots." })),
+    deckCameraPanel(ctx),
     capture);
 }
 
