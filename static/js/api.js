@@ -122,4 +122,7 @@ export const api = {
       json: { species: species || null, message },
       timeoutMs: 30000,
     }),
+
+  // GET /api/system -> live status from the machine running PhytoDex.
+  system: () => request("/api/system", { timeoutMs: 6000 }),
 };

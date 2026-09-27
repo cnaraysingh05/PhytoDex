@@ -35,6 +35,7 @@ def client():
     "/plantdex",
     "/plantdex/1",
     "/ask",
+    "/system",
 ])
 def test_every_screen_address_serves_the_app(client, path):
     # Refreshing any screen asks Flask for that address directly.
@@ -155,3 +156,28 @@ def test_ask_phyto_does_not_label_fallback_as_live_gemini():
 
     assert 'const isLive = result.source === "gemini"' in app_js
     assert "Gemini did not provide this answer" in app_js
+
+
+def test_system_frontend_is_wired(client):
+    page = client.get("/system").get_data(as_text=True)
+    assert 'href="/system"' in page
+    assert 'data-nav="system"' in page
+
+    app_js = (ROOT / "static" / "js" / "app.js").read_text()
+    api_js = (ROOT / "static" / "js" / "api.js").read_text()
+
+    assert "systemView" in app_js
+    assert "formatUptime" in app_js
+    assert 'request("/api/system"' in api_js
+
+    assert "CPU temperature" in app_js
+    assert "Hardware model" in app_js
+    assert "Gemini configuration" in app_js
+
+
+def test_system_frontend_does_not_fake_missing_metrics():
+    app_js = (ROOT / "static" / "js" / "app.js").read_text()
+
+    assert '"Unavailable"' in app_js
+    assert 'status.cpu_temperature_c.toFixed(1)' in app_js
+    assert 'status.hardware_model || "Unavailable"' in app_js
