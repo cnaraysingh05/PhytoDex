@@ -216,3 +216,34 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# PhytoDex AI generated files
+.env
+.env.*
+!.env.ai.example
+.venv*/
+__pycache__/
+*.pyc
+ml/data/
+/models/
+ml-runs/
+training-results.zip
+
+# Branch integration local files
+.phytodex-update/
+.pytest_cache/
+test-results.xml
+static/uploads/captures/*
+!static/uploads/captures/.gitkeep
+
+
+# Local SQLite state
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+
+# Private SQLite migration backups
+*.before-optional-species-*.bak
