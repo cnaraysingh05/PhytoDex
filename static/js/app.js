@@ -233,19 +233,99 @@ async function uploadStep(prepared, attempt) {
 
 async function homeView(ctx) {
   ctx.title("");
+
   const gardenLine = el("span", { text: "Follow saved plants over time" });
+
+  const hardwareGallery = el("section", {
+    class: "cyberdeck-showcase",
+    "aria-labelledby": "cyberdeck-showcase-title",
+  },
+    el("div", { class: "cyberdeck-showcase-head" },
+      el("span", { class: "cyberdeck-kicker", text: "Built for the field" }),
+      el("h2", {
+        id: "cyberdeck-showcase-title",
+        text: "Meet the PhytoDex Cyberdeck",
+      }),
+      el("p", {
+        text: "PhytoDex runs on a Raspberry Pi inside a portable botanical cyberdeck built around a tablet, keyboard, USB camera, and local network.",
+      })
+    ),
+
+    el("div", { class: "cyberdeck-photo-grid" },
+
+      el("figure", { class: "cyberdeck-photo-card" },
+        el("img", {
+          src: "/static/img/cyberdeck/phytodex-cyberdeck-closed.jpg",
+          alt: "Closed olive-green PhytoDex cyberdeck decorated with colorful PhytoDex lettering and felt leaves",
+          loading: "lazy",
+          decoding: "async",
+        }),
+        el("figcaption", {},
+          el("strong", { text: "Rugged exterior" }),
+          el("span", {
+            text: "Portable olive case with the handmade PhytoDex identity.",
+          })
+        )
+      ),
+
+      el("figure", { class: "cyberdeck-photo-card" },
+        el("img", {
+          src: "/static/img/cyberdeck/phytodex-cyberdeck-open.jpg",
+          alt: "Open PhytoDex cyberdeck showing the mounted tablet, compact keyboard, black foam and colorful felt leaves",
+          loading: "lazy",
+          decoding: "async",
+        }),
+        el("figcaption", {},
+          el("strong", { text: "Field workstation" }),
+          el("span", {
+            text: "Tablet interface, compact keyboard, Raspberry Pi hardware and USB camera in one deck.",
+          })
+        )
+      )
+    ),
+
+  );
+
   ctx.show(
-    el("section", { class: "home-intro" },
-      el("h1", { text: "Check on a plant" }),
-      el("p", { text: "Scan a plant to see what Gemini notices in the photo, or open My Garden to follow a plant you've saved over time." })),
+    el("section", { class: "home-intro cyberdeck-home-intro" },
+      el("span", { class: "cyberdeck-kicker", text: "Botanical field deck" }),
+      el("h1", { text: "PhytoDex" }),
+      el("p", {
+        text: "Identify plants, check their condition, build your garden, and get care guidance from a portable Raspberry Pi-powered cyberdeck.",
+      })
+    ),
+
     el("div", { class: "choices" },
-      el("a", { class: "choice choice-scan", href: "/scan", "data-link": true },
-        icon("sprout", "choice-art"), el("strong", { text: "Scan a plant" }), el("span", { text: "Take or choose a photo" })),
-      el("a", { class: "choice choice-garden", href: "/garden", "data-link": true },
-        icon("sprout", "choice-art"), el("strong", { text: "My Garden" }), gardenLine)));
+      el("a", {
+        class: "choice choice-scan",
+        href: "/scan",
+        "data-link": true,
+      },
+        icon("sprout", "choice-art"),
+        el("strong", { text: "Scan a plant" }),
+        el("span", { text: "Use the deck camera or choose a photo" })
+      ),
+
+      el("a", {
+        class: "choice choice-garden",
+        href: "/garden",
+        "data-link": true,
+      },
+        icon("sprout", "choice-art"),
+        el("strong", { text: "My Garden" }),
+        gardenLine
+      )
+    ),
+
+    hardwareGallery
+  );
+
   try {
     const garden = await api.garden();
-    gardenLine.textContent = garden.length ? `${garden.length} saved ${garden.length === 1 ? "plant" : "plants"}` : "No plants saved yet";
+
+    gardenLine.textContent = garden.length
+      ? `${garden.length} saved ${garden.length === 1 ? "plant" : "plants"}`
+      : "No plants saved yet";
   } catch {
     // The rest of the home screen still works; the deck status shows the problem.
   }
