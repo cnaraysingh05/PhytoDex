@@ -26,6 +26,7 @@ const ROUTES = [
   [/^\/garden\/(\d+)\/rescan$/, rescanView, "garden"],
   [/^\/plantdex$/, plantDexView, "plantdex"],
   [/^\/plantdex\/(\d+)$/, plantDexPlantView, "plantdex"],
+  [/^\/ask$/, askPhytoView, "ask"],
 ];
 
 export function navigate(path, { replace = false, toast = null } = {}) {
@@ -638,6 +639,216 @@ async function plantDexPlantView(ctx) {
         careGrid
       )
     )
+  );
+}
+
+// -------------------------------------------------------------- Ask Phyto
+
+function guidanceSection(title, items, emptyText) {
+  return el("section", { class: "guidance-section" },
+    el("h2", { text: title }),
+    list(items, emptyText));
+}
+
+function guidanceResult(result) {
+  const isLive = result.source === "gemini";
+  const urgency = ["low", "medium", "high"].includes(result.urgency)
+    ? result.urgency
+    : "unknown";
+
+  return el("article", { class: "assistant-result" },
+    isLive
+      ? el("div", { class: "assistant-source assistant-source-live" },
+          el("strong", { text: "Live Gemini guidance" }),
+          result.model
+            ? el("span", { text: `Model: ${result.model}` })
+            : null)
+      : el("div", { class: "assistant-source assistant-source-fallback" },
+          el("strong", { text: "Offline fallback guidance" }),
+          el("span", {
+            text: "Gemini did not provide this answer. PhytoDex is showing its built-in general checklist.",
+          })),
+
+    el("div", { class: "guidance-urgency" },
+      el("span", { text: "Urgency" }),
+      el("strong", {
+        class: `urgency urgency-${urgency}`,
+        text: urgency === "unknown"
+          ? "Not assessed"
+          : urgency.charAt(0).toUpperCase() + urgency.slice(1),
+      })),
+
+    guidanceSection(
+      "Likely causes",
+      result.likely_causes,
+      "No likely causes were returned."
+    ),
+
+    guidanceSection(
+      "What to check",
+      result.what_to_check,
+      "No checks were returned."
+    ),
+
+    guidanceSection(
+      "Recommended actions",
+      result.recommended_actions,
+      "No actions were returned."
+    ),
+
+    el("section", { class: "guidance-section guidance-uncertainty" },
+      el("h2", { text: "Limits and uncertainty" }),
+      el("p", {
+        text: result.uncertainty_note ||
+          "PhytoDex did not receive an uncertainty note.",
+      }))
+  );
+}
+
+async function askPhytoView(ctx) {
+  ctx.title("Ask Phyto");
+
+  const species = el("input", {
+    id: "ask-species",
+    name: "species",
+    type: "text",
+    maxlength: "120",
+    list: "ask-species-list",
+    autocomplete: "off",
+    placeholder: "Pothos (optional)",
+  });
+
+  const speciesList = el("datalist", {
+    id: "ask-species-list",
+  });
+
+  const message = el("textarea", {
+    id: "ask-message",
+    name: "message",
+    maxlength: "3000",
+    rows: "6",
+    placeholder: "Example: The lower leaves are yellow and the soil stays wet. What should I check?",
+    required: true,
+  });
+
+  const errorBox = el("p", {
+    class: "field-error",
+    role: "alert",
+  });
+
+  const resultBox = el("div", {
+    class: "assistant-output",
+    "aria-live": "polite",
+  });
+
+  const submitButton = button("Ask Phyto", {
+    type: "submit",
+    iconName: "leaf",
+  });
+
+  // PlantDex provides suggestions, but users can still type any species.
+  api.plants()
+    .then((plants) => {
+      speciesList.replaceChildren(
+        ...plants.map((plant) =>
+          el("option", {
+            value: plant.common_name,
+            label: plant.scientific_name || plant.common_name,
+          }))
+      );
+    })
+    .catch(() => {
+      // Ask Phyto still works without PlantDex suggestions.
+    });
+
+  async function submit(event) {
+    event.preventDefault();
+
+    const question = message.value.trim();
+    const plantSpecies = species.value.trim();
+
+    errorBox.textContent = "";
+
+    if (!question) {
+      errorBox.textContent = "Enter a plant-care question for Phyto.";
+      message.focus();
+      return;
+    }
+
+    submitButton.disabled = true;
+    resultBox.replaceChildren(loading("Phyto is checking your question"));
+
+    try {
+      const result = await api.askPhyto(plantSpecies, question);
+
+      if (!ctx.isCurrent()) return;
+
+      resultBox.replaceChildren(guidanceResult(result));
+    } catch (error) {
+      if (!ctx.isCurrent()) return;
+
+      resultBox.replaceChildren(
+        notice(
+          "error",
+          "Phyto couldn't answer",
+          error.message,
+          button("Try again", {
+            variant: "secondary",
+            onclick: () =>
+              form.dispatchEvent(
+                new Event("submit", { cancelable: true })
+              ),
+          })
+        )
+      );
+    } finally {
+      submitButton.disabled = false;
+    }
+  }
+
+  const form = el("form", {
+    class: "assistant-form",
+    onsubmit: submit,
+    novalidate: true,
+  },
+    el("div", { class: "field" },
+      el("label", {
+        for: "ask-species",
+        text: "Species (optional)",
+      }),
+      species,
+      speciesList,
+      el("p", {
+        class: "hint",
+        text: "Choose a PlantDex suggestion or type another species. Leave it blank if you're not sure.",
+      })
+    ),
+
+    el("div", { class: "field" },
+      el("label", {
+        for: "ask-message",
+        text: "What do you want to know?",
+      }),
+      message,
+      el("p", {
+        class: "hint",
+        text: "Include useful details like watering, drainage, light, and how long the symptoms have been present.",
+      }),
+      errorBox
+    ),
+
+    el("div", { class: "btn-row" }, submitButton)
+  );
+
+  ctx.show(
+    el("div", { class: "page-head" },
+      el("h1", { text: "Ask Phyto" }),
+      el("p", {
+        text: "Describe what is happening with a plant. Phyto gives tentative care guidance and clearly tells you whether the response came from live Gemini or the deck's offline fallback.",
+      })
+    ),
+    form,
+    resultBox
   );
 }
 

@@ -113,4 +113,13 @@ export const api = {
 
   // GET /api/plants/<id> -> full care profile for one PlantDex species.
   plant: (plantId) => request(`/api/plants/${plantId}`),
+
+  // POST /api/assistant -> structured plant-care guidance.
+  // species is optional; message is required.
+  askPhyto: (species, message) =>
+    request("/api/assistant", {
+      method: "POST",
+      json: { species: species || null, message },
+      timeoutMs: 30000,
+    }),
 };

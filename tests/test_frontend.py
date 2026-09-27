@@ -34,6 +34,7 @@ def client():
     "/garden/3/rescan",
     "/plantdex",
     "/plantdex/1",
+    "/ask",
 ])
 def test_every_screen_address_serves_the_app(client, path):
     # Refreshing any screen asks Flask for that address directly.
@@ -130,3 +131,27 @@ def test_plantdex_frontend_is_wired(client):
 
     assert 'params.set("q", query.trim())' in api_js
     assert "request(`/api/plants/${plantId}`)" in api_js
+
+
+def test_ask_phyto_frontend_is_wired(client):
+    page = client.get("/ask").get_data(as_text=True)
+    assert 'href="/ask"' in page
+    assert 'data-nav="ask"' in page
+
+    app_js = (ROOT / "static" / "js" / "app.js").read_text()
+    api_js = (ROOT / "static" / "js" / "api.js").read_text()
+
+    assert "askPhytoView" in app_js
+    assert 'result.source === "gemini"' in app_js
+    assert "Live Gemini guidance" in app_js
+    assert "Offline fallback guidance" in app_js
+
+    assert 'request("/api/assistant"' in api_js
+    assert "species: species || null" in api_js
+
+
+def test_ask_phyto_does_not_label_fallback_as_live_gemini():
+    app_js = (ROOT / "static" / "js" / "app.js").read_text()
+
+    assert 'const isLive = result.source === "gemini"' in app_js
+    assert "Gemini did not provide this answer" in app_js
