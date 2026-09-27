@@ -27,6 +27,7 @@ const ROUTES = [
   [/^\/plantdex$/, plantDexView, "plantdex"],
   [/^\/plantdex\/(\d+)$/, plantDexPlantView, "plantdex"],
   [/^\/ask$/, askPhytoView, "ask"],
+  [/^\/system$/, systemView, "system"],
 ];
 
 export function navigate(path, { replace = false, toast = null } = {}) {
@@ -850,6 +851,275 @@ async function askPhytoView(ctx) {
     form,
     resultBox
   );
+}
+
+// ---------------------------------------------------------------- System
+
+function humanStatus(value) {
+  const labels = {
+    ok: "OK",
+    offline: "Offline",
+    configured_not_checked: "Configured, not checked",
+    not_configured: "Not configured",
+    not_initialized: "Not initialized",
+    schema_incomplete: "Schema incomplete",
+    unavailable: "Unavailable",
+    local_interface_up: "Local network connected",
+    no_local_ipv4: "No local IPv4",
+    not_checked: "Not checked",
+  };
+
+  return labels[value] || String(value || "Unavailable").replaceAll("_", " ");
+}
+
+function formatUptime(seconds) {
+  if (!Number.isFinite(seconds)) return "Unavailable";
+
+  let remaining = Math.max(0, Math.floor(seconds));
+  const days = Math.floor(remaining / 86400);
+  remaining %= 86400;
+  const hours = Math.floor(remaining / 3600);
+  remaining %= 3600;
+  const minutes = Math.floor(remaining / 60);
+
+  const parts = [];
+  if (days) parts.push(`${days}d`);
+  if (hours || days) parts.push(`${hours}h`);
+  parts.push(`${minutes}m`);
+
+  return parts.join(" ");
+}
+
+function systemValue(label, value) {
+  return el("div", { class: "system-item" },
+    el("dt", { text: label }),
+    el("dd", { text: value }));
+}
+
+function systemStatusClass(value) {
+  if (["ok", "local_interface_up", "configured_not_checked"].includes(value)) {
+    return "system-good";
+  }
+
+  if (["offline", "not_checked", "not_initialized"].includes(value)) {
+    return "system-neutral";
+  }
+
+  if (["unavailable", "schema_incomplete", "no_local_ipv4", "not_configured"].includes(value)) {
+    return "system-warn";
+  }
+
+  return "system-neutral";
+}
+
+async function systemView(ctx) {
+  ctx.title("System");
+
+  const content = el("div", {
+    class: "system-content",
+    "aria-live": "polite",
+  });
+
+  const refreshButton = button("Refresh status", {
+    variant: "secondary",
+    iconName: "refresh",
+    onclick: loadStatus,
+  });
+
+  async function loadStatus() {
+    refreshButton.disabled = true;
+    content.replaceChildren(loading("Reading deck status"));
+
+    try {
+      const status = await api.system();
+
+      if (!ctx.isCurrent()) return;
+
+      const interfaces = Array.isArray(status.network?.interfaces)
+        ? status.network.interfaces
+        : [];
+
+      const networkList = interfaces.length
+        ? el("ul", { class: "system-interface-list" },
+            interfaces.flatMap((iface) => {
+              const addresses = Array.isArray(iface.ipv4) ? iface.ipv4 : [];
+
+              if (!addresses.length) {
+                return [el("li", { text: iface.name || "Unknown interface" })];
+              }
+
+              return addresses.map((address) =>
+                el("li", {
+                  text: `${iface.name || "Interface"} — ${address}`,
+                }));
+            }))
+        : el("p", {
+            class: "none",
+            text: "No active non-loopback IPv4 interfaces reported.",
+          });
+
+      const temperature = Number.isFinite(status.cpu_temperature_c)
+        ? `${status.cpu_temperature_c.toFixed(1)} °C`
+        : "Unavailable";
+
+      const hardware = status.hardware_model || "Unavailable";
+
+      const piValue = status.is_raspberry_pi ? "Yes" : "No";
+
+      const backendStatus = status.backend?.status || "unavailable";
+      const databaseStatus = status.database?.status || "unavailable";
+      const networkStatus = status.network?.status || "unavailable";
+      const internetStatus = status.network?.internet_status || "not_checked";
+      const geminiStatus = status.gemini?.status || "unavailable";
+
+      content.replaceChildren(
+        el("section", {
+          class: "system-panel",
+          "aria-labelledby": "system-device-title",
+        },
+          el("div", { class: "system-panel-head" },
+            el("h2", {
+              id: "system-device-title",
+              text: "Deck hardware",
+            }),
+            el("span", {
+              class: `system-pill ${status.is_raspberry_pi ? "system-good" : "system-neutral"}`,
+              text: status.is_raspberry_pi ? "Raspberry Pi" : "Non-Pi host",
+            })
+          ),
+
+          el("dl", { class: "system-grid" },
+            systemValue("Hostname", status.hostname || "Unavailable"),
+            systemValue("Hardware model", hardware),
+            systemValue("Raspberry Pi", piValue),
+            systemValue("Uptime", formatUptime(status.uptime_seconds)),
+            systemValue("CPU temperature", temperature)
+          )
+        ),
+
+        el("section", {
+          class: "system-panel",
+          "aria-labelledby": "system-services-title",
+        },
+          el("h2", {
+            id: "system-services-title",
+            text: "Services",
+          }),
+
+          el("div", { class: "system-status-list" },
+            el("div", { class: "system-status-row" },
+              el("span", { text: "Backend" }),
+              el("strong", {
+                class: `system-pill ${systemStatusClass(backendStatus)}`,
+                text: humanStatus(backendStatus),
+              })
+            ),
+
+            el("div", { class: "system-status-row" },
+              el("span", { text: "Database" }),
+              el("strong", {
+                class: `system-pill ${systemStatusClass(databaseStatus)}`,
+                text: humanStatus(databaseStatus),
+              })
+            ),
+
+            el("div", { class: "system-status-row" },
+              el("span", { text: "Local network" }),
+              el("strong", {
+                class: `system-pill ${systemStatusClass(networkStatus)}`,
+                text: humanStatus(networkStatus),
+              })
+            ),
+
+            el("div", { class: "system-status-row" },
+              el("span", { text: "Internet check" }),
+              el("strong", {
+                class: `system-pill ${systemStatusClass(internetStatus)}`,
+                text: humanStatus(internetStatus),
+              })
+            ),
+
+            el("div", { class: "system-status-row" },
+              el("span", { text: "Gemini" }),
+              el("strong", {
+                class: `system-pill ${systemStatusClass(geminiStatus)}`,
+                text: humanStatus(geminiStatus),
+              })
+            )
+          )
+        ),
+
+        el("section", {
+          class: "system-panel",
+          "aria-labelledby": "system-network-title",
+        },
+          el("h2", {
+            id: "system-network-title",
+            text: "Network",
+          }),
+
+          networkList,
+
+          el("p", {
+            class: "system-note",
+            text: "These are local IPv4 addresses reported by the machine running PhytoDex.",
+          })
+        ),
+
+        el("section", {
+          class: "system-panel",
+          "aria-labelledby": "system-ai-title",
+        },
+          el("h2", {
+            id: "system-ai-title",
+            text: "Gemini configuration",
+          }),
+
+          el("dl", { class: "system-grid" },
+            systemValue("Mode", status.gemini?.mode || "Unavailable"),
+            systemValue("Model", status.gemini?.model || "Unavailable"),
+            systemValue("Status", humanStatus(geminiStatus))
+          ),
+
+          el("p", {
+            class: "system-note",
+            text: "Opening this screen does not make a Gemini request or expose the API key.",
+          })
+        )
+      );
+    } catch (error) {
+      if (!ctx.isCurrent()) return;
+
+      content.replaceChildren(
+        notice(
+          "error",
+          "System status couldn't load",
+          error.message,
+          button("Try again", {
+            variant: "secondary",
+            onclick: loadStatus,
+          })
+        )
+      );
+    } finally {
+      refreshButton.disabled = false;
+    }
+  }
+
+  ctx.show(
+    el("div", { class: "list-head" },
+      el("div", { class: "page-head" },
+        el("h1", { text: "System" }),
+        el("p", {
+          text: "Live status from the machine running PhytoDex. Hardware-only values show as unavailable when the host cannot report them.",
+        })
+      ),
+      refreshButton
+    ),
+    content
+  );
+
+  await loadStatus();
 }
 
 // ---------------------------------------------------------------- garden

@@ -21,6 +21,7 @@ PAGE_ROUTES = (
     "/plantdex",
     "/plantdex/<int:plant_id>",
     "/ask",
+    "/system",
 )
 
 

@@ -506,3 +506,120 @@ h3 { font-size: 1rem; margin: 0 0 .35rem; }
   margin: 0;
   color: var(--ink-soft);
 }
+
+/* ---------- System ---------- */
+.system-content {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.system-panel {
+  padding: 1.2rem 1.3rem;
+  background: var(--sheet);
+  border: 1.5px solid var(--vein);
+  border-radius: var(--radius);
+}
+
+.system-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: .9rem;
+}
+
+.system-panel-head h2 {
+  margin: 0;
+}
+
+.system-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: .8rem;
+  margin: 0;
+}
+
+.system-item {
+  padding: .8rem .9rem;
+  background: var(--lilac);
+  border: 1px solid var(--vein);
+  border-radius: var(--radius-sm);
+}
+
+.system-item dt {
+  margin-bottom: .2rem;
+  color: var(--ink-soft);
+  font-size: .85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .035em;
+}
+
+.system-item dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.system-status-list {
+  display: grid;
+}
+
+.system-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .8rem 0;
+  border-bottom: 1px solid var(--vein);
+}
+
+.system-status-row:first-child {
+  padding-top: 0;
+}
+
+.system-status-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.system-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: .25rem .7rem;
+  font-size: .88rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.system-good {
+  background: var(--healthy-bg);
+  color: var(--healthy);
+}
+
+.system-neutral {
+  background: var(--unknown-bg);
+  color: var(--unknown);
+}
+
+.system-warn {
+  background: var(--attention-bg);
+  color: var(--attention);
+}
+
+.system-interface-list {
+  margin: 0;
+  padding-left: 1.3rem;
+}
+
+.system-interface-list li {
+  margin: .3rem 0;
+  overflow-wrap: anywhere;
+}
+
+.system-note {
+  margin: .8rem 0 0;
+  color: var(--ink-soft);
+  font-size: .92rem;
+}
