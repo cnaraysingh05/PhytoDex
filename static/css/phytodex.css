@@ -300,3 +300,95 @@ h3 { font-size: 1rem; margin: 0 0 .35rem; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0s !important; animation-iteration-count: 1 !important; transition: none !important; }
 }
+
+/* ---------- PlantDex ---------- */
+.plantdex-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: .6rem;
+  padding: 1rem 1.1rem;
+  background: var(--sheet);
+  border: 1.5px solid var(--vein);
+  border-radius: var(--radius);
+}
+
+.plantdex-search .field {
+  margin: 0;
+}
+
+.plantdex-count {
+  min-height: 1.5rem;
+  margin: .8rem 0 1rem;
+}
+
+.plantdex-results {
+  min-height: 10rem;
+}
+
+.plantdex-card .thumb {
+  min-height: 10rem;
+}
+
+.plantdex-card .species {
+  margin: 0;
+}
+
+.plantdex-profile {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
+.plantdex-photo img {
+  width: 100%;
+  max-height: 34rem;
+  object-fit: contain;
+}
+
+.plantdex-summary {
+  color: var(--ink-soft);
+  margin: 1rem 0 1.25rem;
+}
+
+.care-grid {
+  margin: 1.25rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: .8rem;
+}
+
+.care-item {
+  margin: 0;
+  padding: .85rem .95rem;
+  background: var(--lilac);
+  border: 1px solid var(--vein);
+  border-radius: var(--radius-sm);
+}
+
+.care-item dt {
+  margin: 0 0 .2rem;
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--iris-deep);
+  text-transform: uppercase;
+  letter-spacing: .035em;
+}
+
+.care-item dd {
+  margin: 0;
+}
+
+@media (min-width: 760px) {
+  .plantdex-profile {
+    grid-template-columns: minmax(16rem, 4fr) minmax(0, 6fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .plantdex-search {
+    grid-template-columns: 1fr;
+  }
+}

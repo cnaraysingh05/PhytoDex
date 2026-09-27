@@ -101,6 +101,16 @@ export const api = {
 
   removePlant: (gardenId) => request(`/api/garden/${gardenId}`, { method: "DELETE" }),
 
-  // GET /api/plants -> PlantDex species, used for the species picker when saving
-  plants: () => request("/api/plants"),
+  // PlantDex species library.
+  // With no query this returns the whole library; with a query the backend
+  // searches common and scientific names.
+  plants(query = "") {
+    const params = new URLSearchParams();
+    if (query.trim()) params.set("q", query.trim());
+    const suffix = params.toString() ? `?${params.toString()}` : "";
+    return request(`/api/plants${suffix}`);
+  },
+
+  // GET /api/plants/<id> -> full care profile for one PlantDex species.
+  plant: (plantId) => request(`/api/plants/${plantId}`),
 };
