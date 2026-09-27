@@ -3,30 +3,70 @@
    Only fonts already on the device are used, so the UI works offline. */
 
 :root {
-  --nightshade: #24163a;   /* deck frame */
-  --nightshade-2: #34224f;
-  --iris: #6a3fa0;         /* primary actions */
-  --iris-deep: #4f2d7d;
-  --iris-soft: #e6dcf4;
-  --lilac: #f3eef9;        /* page */
-  --sheet: #fdfbff;        /* specimen sheet */
-  --vein: #d8cbe9;         /* borders */
-  --ink: #2a1e38;
-  --ink-soft: #5d4f70;
-  --petal: #cdb8ef;        /* light accent on dark frame */
+  /* ---------- Physical cyberdeck palette ---------- */
+  --deck-olive: #46522f;
+  --deck-olive-dark: #2e3822;
+  --deck-olive-light: #65734b;
 
-  --healthy: #2f6b2a;   --healthy-bg: #e3f0dc;
-  --attention: #8a5a0b; --attention-bg: #fbeed2;
-  --concerning: #9c2f4f; --concerning-bg: #f8dfe7;
-  --unknown: #5f566b;   --unknown-bg: #ebe7f0;
-  --danger: #9c2f4f;
+  --foam: #171917;
+  --foam-soft: #242824;
 
-  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", "URW Palladio L", P052, Georgia, serif;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  --lime: #d7f38f;
+  --lime-soft: #edf8c8;
+  --lime-deep: #a9ce52;
 
-  --radius-sm: 8px;
-  --radius: 14px;
-  --tap: 52px;             /* minimum touch target */
+  --paper: #fbecef;
+  --sheet: #fff9fb;
+  --line: #e6c4ce;
+
+  --ink: #20261c;
+  --ink-soft: #5c6652;
+
+  --leaf-green: #2f7d32;
+  --leaf-green-deep: #215b24;
+
+  --felt-yellow: #ffd60a;
+  --felt-red: #e63946;
+  --felt-orange: #ff8f00;
+
+  /* ---------- Functional status colors ---------- */
+  --healthy: #2f7d32;
+  --healthy-bg: #e4f2da;
+
+  --attention: #8a6500;
+  --attention-bg: #fff3c7;
+
+  --concerning: #a7323d;
+  --concerning-bg: #f8dde0;
+
+  --unknown: #646861;
+  --unknown-bg: #e8e9e4;
+
+  --danger: #a7323d;
+
+  /* ---------- Typography ---------- */
+  --display: "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans",
+          "Helvetica Neue", Arial, sans-serif;
+
+  /*
+   * Temporary compatibility aliases.
+   * Existing screens still reference the old purple-era variable names.
+   * We will remove these gradually as each screen is redesigned.
+   */
+  --nightshade: var(--deck-olive-dark);
+  --nightshade-2: var(--deck-olive);
+  --iris: #f2d7df;
+  --iris-deep: #9d526a;
+  --iris-soft: #fbecef;
+  --lilac: #fbecef;
+  --vein: #e6c4ce;
+  --petal: #f2d7df;
+  --serif: var(--display);
+
+  --radius-sm: 10px;
+  --radius: 16px;
+  --tap: 52px;
   --page: 64rem;
   --nav-h: 68px;
 }
@@ -147,7 +187,7 @@ h3 { font-size: 1rem; margin: 0 0 .35rem; }
 .choice strong { font-family: var(--serif); font-size: 2rem; font-weight: 600; line-height: 1.1; }
 .choice span { font-size: 1rem; }
 .choice-scan { background: var(--iris); color: #fff; }
-.choice-scan svg.choice-art { stroke: #b99ae4; }
+.choice-scan svg.choice-art { stroke: #dcaebe; }
 .choice-scan:hover { background: var(--iris-deep); }
 .choice-garden { background: var(--sheet); color: var(--ink); border: 1.5px solid var(--vein); }
 .choice-garden svg.choice-art { stroke: #b7d8a9; }
@@ -253,10 +293,10 @@ h3 { font-size: 1rem; margin: 0 0 .35rem; }
   .plant-card .nick { font-size: 1.2rem; }
 }
 .placeholder { width: 100%; height: 100%; display: grid; place-items: center; }
-.placeholder svg { width: 38%; max-width: 80px; fill: none; stroke: #a58bcd; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.placeholder svg { width: 38%; max-width: 80px; fill: none; stroke: #c8879c; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 
 .empty-state { text-align: center; max-width: 30rem; margin: 2.5rem auto; padding: 2.2rem 1.5rem; background: var(--sheet); border: 1.5px dashed var(--vein); border-radius: 22px; }
-.empty-state svg { width: 84px; height: 84px; margin: 0 auto 1rem; fill: none; stroke: #a58bcd; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.empty-state svg { width: 84px; height: 84px; margin: 0 auto 1rem; fill: none; stroke: #c8879c; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .empty-state h2 { margin-bottom: .4rem; }
 .empty-state p { color: var(--ink-soft); margin: 0 0 1.4rem; }
 
@@ -689,4 +729,202 @@ h3 { font-size: 1rem; margin: 0 0 .35rem; }
 
 .deck-camera-controls {
   margin-top: .75rem;
+}
+
+/* ============================================================
+   Cyberdeck visual layer
+   ============================================================ */
+
+/* The camera sits visually inside the black foam interior. */
+.viewfinder,
+.deck-camera-preview-frame {
+  background: var(--foam);
+}
+
+/* Lime framing corners echo the green exterior panel. */
+.viewfinder::before,
+.viewfinder::after {
+  border-color: var(--lime);
+}
+
+/* Rugged physical shell treatment for the main navigation frame. */
+.deck-bar {
+  background:
+    linear-gradient(
+      180deg,
+      var(--deck-olive-light) 0%,
+      var(--deck-olive) 15%,
+      var(--deck-olive-dark) 100%
+    );
+  border-bottom: 2px solid #202819;
+  box-shadow: 0 3px 10px rgb(23 25 23 / 22%);
+}
+
+/* Warm paper body instead of lavender. */
+body {
+  background: var(--paper);
+}
+
+/* Cards should resemble the light physical panel / keyboard surfaces. */
+.label-card,
+.save-panel,
+.compare,
+.scan-entry,
+.plantdex-search,
+.system-panel,
+.ask-panel,
+.progress,
+.empty-state {
+  background: var(--sheet);
+}
+
+/* ---------- Keyboard-pink cyberdeck accents ---------- */
+
+.btn-primary {
+  background: #f2d7df;
+  color: var(--deck-olive-dark);
+  border-color: #dcaebe;
+}
+
+.btn-primary:hover {
+  background: #eac6d1;
+  color: var(--deck-olive-dark);
+}
+
+.btn-secondary {
+  background: var(--sheet);
+  color: var(--deck-olive-dark);
+  border-color: #e6c4ce;
+}
+
+.btn-secondary:hover {
+  background: #fbecef;
+  border-color: #dcaebe;
+}
+
+a {
+  color: #7f4055;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: #d79caf;
+  outline-color: #f2d7df;
+}
+
+.deck-nav a[aria-current="page"] {
+  background: #f2d7df;
+  color: var(--deck-olive-dark);
+}
+
+.viewfinder,
+.deck-camera-preview-frame {
+  background: var(--foam);
+}
+
+/* ============================================================
+   Physical cyberdeck showcase
+   ============================================================ */
+
+.cyberdeck-home-intro {
+  position: relative;
+  padding: 1.4rem 0 .4rem;
+}
+
+.cyberdeck-home-intro h1 {
+  font-family: var(--display);
+  font-size: clamp(2.6rem, 8vw, 4.8rem);
+  font-weight: 800;
+  letter-spacing: -.04em;
+  color: var(--deck-olive-dark);
+  margin-bottom: .35rem;
+}
+
+.cyberdeck-kicker {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-bottom: .45rem;
+  padding: .28rem .7rem;
+  border-radius: 999px;
+  background: var(--lime);
+  color: var(--deck-olive-dark);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.cyberdeck-showcase {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--deck-olive);
+}
+
+.cyberdeck-showcase-head {
+  max-width: 43rem;
+  margin-bottom: 1.25rem;
+}
+
+.cyberdeck-showcase-head h2 {
+  font-family: var(--display);
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  color: var(--deck-olive-dark);
+  margin-bottom: .45rem;
+}
+
+.cyberdeck-showcase-head p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.cyberdeck-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.2rem;
+}
+
+.cyberdeck-photo-card {
+  margin: 0;
+  overflow: hidden;
+  background: var(--sheet);
+  border: 2px solid #e6c4ce;
+  border-radius: 20px;
+  box-shadow: 0 8px 22px rgb(46 56 34 / 12%);
+}
+
+.cyberdeck-photo-card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--foam);
+}
+
+.cyberdeck-photo-card figcaption {
+  display: grid;
+  gap: .2rem;
+  padding: 1rem 1.1rem 1.1rem;
+}
+
+.cyberdeck-photo-card figcaption strong {
+  font-family: var(--display);
+  font-size: 1.15rem;
+  color: var(--deck-olive-dark);
+}
+
+.cyberdeck-photo-card figcaption span {
+  font-size: .92rem;
+  color: var(--ink-soft);
+}
+
+
+
+
+
+
+@media (max-width: 700px) {
+  .cyberdeck-photo-grid {
+    grid-template-columns: 1fr;
+  }
 }
